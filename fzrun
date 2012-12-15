@@ -32,19 +32,21 @@ FORCE=""
 PERPROCESS=""
 # the pid of the process to try to parse if specified
 SINGLEPROCESS="" 
+SUPPRESS=""
 # print the help for this program
 function print_help {
     cat <<EOF   
-Usage: fzrun [-vpfh] [PID]
+Usage: fzrun [-vqpfh] [PID]
 Uses fuzzy logic techniques to determine if a machine has runaway
 processes on it, and tries to identify which processes are runaways.
 
 By default, looks at entire state of machine. If PID is provided, only
-that single process is checked to see if it is a runway.
+that single process is checked to see if it is a runaway.
 
 Options:
   -h	Print this help
   -v	Turn on verbose output
+  -q	Suppress all output. Takes priority over verbose.
   -p	Try to detect individual runaway process, if fzrun thinks they exist
   -f	Force fzrun to detect individual runaways, even if it doesn't think
     	there are any
@@ -232,10 +234,18 @@ function look_for_runaways {
 
 # print text if debug is enabled
 function debug {
-    	if [[ -n "$VERBOSE" ]] ; then
+    	if [[ -n "$VERBOSE" && -z "$SUPPRESS" ]] ; then
 	    echo $@
 	fi
 }
+
+# print text only if SUPPRESS not specified
+function suppress {
+    if [[ -z "$SUPPRESS" ]] ; then
+	echo $@
+    fi
+}
+
 
 # determine if a specific process is a runaway process
 function is_runaway {
@@ -337,7 +347,7 @@ function find_runaways {
     for p in $(ps axho pid); do	
 	if is_runaway $p ; then	   	    
 	    if [[ -z "$VERBOSE" ]] ; then		
-		echo $HOSTNAME $p
+		suppress $HOSTNAME $p
 	    fi
 	fi
     done
@@ -349,6 +359,10 @@ function process_args {
 	# set the verbose flag
 	if [[ -n $(echo $arg | grep -i v) ]] ; then
 	    VERBOSE=1
+	fi
+	# set the supress flag
+	if [[ -n $(echo $arg | grep -i q) ]] ; then
+	    SUPPRESS=1
 	fi
 	# set the force flag
 	if [[ -n $(echo $arg | grep -i f) ]] ; then
@@ -391,12 +405,10 @@ function main {
 	fi
 	exit $result
     fi
-
-
-
+    # If SINGLEPROCESS was not set, we will check the state of the entire machine
     if look_for_runaways ; then
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
-	    echo $HOSTNAME
+	    suppress $HOSTNAME
 	fi
 	if [[ -n "$PERPROCESS" ]] ; then
 	    find_runaways
@@ -404,9 +416,6 @@ function main {
 	# we found runaways. Exit with status 0
 	exit 0
     elif [[ -n "$FORCE" ]] ; then
-	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
-	    echo $HOSTNAME
-	fi
 	find_runaways
     fi
     # we did not find runaways. return error code.
