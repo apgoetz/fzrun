@@ -23,27 +23,35 @@
 # to see an example use of this program, look at net_runaway.sh
 
 
+# parameters and arguments are the only global variables:
+
+
+
 VERBOSE=""
 FORCE=""
 PERPROCESS=""
-
+# the pid of the process to try to parse if specified
+SINGLEPROCESS="" 
 # print the help for this program
 function print_help {
     cat <<EOF   
-Usage: fzrun [-vpfh]
+Usage: fzrun [-vpfh] [PID]
 Uses fuzzy logic techniques to determine if a machine has runaway
 processes on it, and tries to identify which processes are runaways.
+
+By default, looks at entire state of machine. If PID is provided, only
+that single process is checked to see if it is a runway.
 
 Options:
   -h	Print this help
   -v	Turn on verbose output
-  -p	Try to detect individual runaway process, if frun thinks they exist
-  -f	Force frun to detect individual runaways, even if it doesn't think
+  -p	Try to detect individual runaway process, if fzrun thinks they exist
+  -f	Force fzrun to detect individual runaways, even if it doesn't think
     	there are any
 
-By default, frun looks at the load average, memory usage, and I/O wait
+By default, fzrun looks at the load average, memory usage, and I/O wait
 time to determine if the machine is currently experiencing
-runaway. frun will examine individual processes in more detail,
+runaway. fzrun will examine individual processes in more detail,
 however, this operation is much slower.
 
 Report bugs to: andy@andygoetz.org
@@ -335,18 +343,27 @@ function find_runaways {
 # check the arguments to this function
 function process_args {
     for arg in $@; do
+	# set the verbose flag
 	if [[ -n $(echo $arg | grep -i v) ]] ; then
 	    VERBOSE=1
 	fi
+	# set the force flag
 	if [[ -n $(echo $arg | grep -i f) ]] ; then
 	    FORCE=1
 	fi
+	# set the per process flag
 	if [[ -n $(echo $arg | grep -i p) ]] ; then
 	    PERPROCESS=1
 	fi
+	# check if the help flag was specified
 	if [[ -n $(echo $arg | grep -i h) ]] ; then
 	    print_help
 	    exit 0
+	fi
+	# determine if a pid was passed in. If so, we only check that
+	# one pid
+	if [[ -n $(echo $arg | egrep '^[0-9]+$') ]] ; then
+	    SINGLEPROCESS=$arg
 	fi
     done
 }
@@ -354,7 +371,24 @@ function process_args {
 function main {
 
     process_args $@
-    
+
+    # If SINGLEPROCESS is set, that means the user only wants us to
+    # check if a single process is a runaway. The return value of the
+    # script determines if fzrun thinks the process was a runaway.
+    if [[ -n "$SINGLEPROCESS" ]]; then 
+	# check and see if the process is a runaway, but suppress it's
+	# output
+	VERBOSE='' is_runaway $SINGLEPROCESS 
+	local result=$?
+	if [[ $result -eq 0 ]] ; then
+	    debug $SINGLEPROCESS may be a runaway
+	else
+	    debug $SINGLEPROCESS probably not a runaway
+	fi
+	exit $result
+    fi
+
+
     #check script arguments
     if look_for_runaways ; then
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
@@ -369,8 +403,7 @@ function main {
 	fi
 	find_runaways
     fi
-    
-    return 0
+    return 1
 }
 # call main program
 main $@
