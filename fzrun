@@ -51,7 +51,7 @@ Options:
 
 By default, fzrun looks at the load average, memory usage, and I/O wait
 time to determine if the machine is currently experiencing
-runaway. fzrun will examine individual processes in more detail,
+runaways. fzrun will examine individual processes in more detail,
 however, this operation is much slower.
 
 Report bugs to: andy@andygoetz.org
@@ -209,16 +209,19 @@ function look_for_runaways {
     local MAX_MEM="0.8"
     local MAX_IO=$(_bc "1 / $(num_cpus)")
 
+    # check if load is too high
     if cond "$(get_cpu_load) > $MAX_LOAD" ; then
 	mesg="bad"
 	retval=0
     fi
 
+    # check if too much memory is being used
     if cond "$(get_mem_usage) > $MAX_MEM" ; then
 	mesg="bad"
 	retval=0
     fi
 
+    # check if machine spends too much time waiting on IO
     if cond "$IO_USAGE > $MAX_IO" ; then
 	mesg="bad"
 	retval=0
@@ -370,6 +373,7 @@ function process_args {
 # entry point for script
 function main {
 
+    #check script arguments
     process_args $@
 
     # If SINGLEPROCESS is set, that means the user only wants us to
@@ -389,7 +393,7 @@ function main {
     fi
 
 
-    #check script arguments
+
     if look_for_runaways ; then
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
 	    echo $HOSTNAME
