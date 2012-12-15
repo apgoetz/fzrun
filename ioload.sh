@@ -9,7 +9,7 @@ for i in $(seq $MAX) ; do
 
     file=$(tempfile -d .)
     files[$i]=$file
-    dd if=/dev/zero of=$file bs=4k count=64k &
+    dd if=/dev/zero of=$file bs=4k count=64k >/dev/null 2>&1 &
     pids[$i]=$!
 done
 
