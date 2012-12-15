@@ -316,7 +316,8 @@ function is_runaway {
 #    to use the 'medium' cpu and memory thresholds. If there is an
 #    attached tty, or a parent process, the higher thresholds are used
 #    to decided if the process is a runaway
-    local BADNESS=$(or $(and $(not $nice) $midcpu) \
+    local BADNESS=$(or \
+	$(and $(not $nice) $midcpu) \
     	$(and $(not $nice) $midmem) \
     	$(and $(not $nice) $hicpu) \
     	$(and $(not $nice) $himem) \
