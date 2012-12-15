@@ -81,24 +81,43 @@ function cond {
 
 # Fuzzy AND operator
 function and {
-    local result=1
-    for val in $@ ; do
-	result=$(_bc "if($result < $val) {$result} else {$val}")
-    done 
-    echo $result
+
+    # we do horrific things by making bc do our math for us
+    local script=""
+    local i=0
+    for arg in $@ ; do
+    	script="${script}a[$i]=$arg;"
+    	let i=i+1
+    done
+    script="${script}min=1;for(i=0;i<$#;i++){"
+    script="${script}if(a[i] < min){min=a[i]}};min"
+    _bc $script
 }
 # Fuzzy OR
 function or {
-    local result=0
-    for val in $@ ; do
-	result=$(_bc "if($result > $val) {$result} else {$val}")
+
+    local script=""
+    local i=0
+    for arg in $@ ; do
+    	script="${script}a[$i]=$arg;"
+	let i=i+1
     done
-    echo $result
+    script="${script}max=0;for(i=0;i<$#;i++){"
+    script="${script}if(a[i] > max){max=a[i]}};max"
+    _bc $script
+
 }
 
-# Fuzzy NOT
+# this is a non-fuzzy not function. However, we do not need a fuzzy
+# not function in this program. Because it is not fuzzy, we can use
+# shell builtins to speed up execution
 function not {
-    _bc "1 - $1"
+    if [[ "$1" == 0 ]] ; then
+	echo 1
+    else
+	echo 0
+    fi    
+#    _bc "1 - $1"
 }
 
 # scales a fuzzy variable using a triangular fitness function.
@@ -281,6 +300,10 @@ function is_runaway {
     else
 	nice=$(_bc "$nice / 20")
     fi
+    
+    if cond "$nice < 0" ; then
+	nice=0
+    fi
 
     # determine if the process has been disowned by its parent
     local disowned=''
@@ -309,26 +332,18 @@ function is_runaway {
     local himem=$(fuzzy ".85" "1" $mem)
 
 
-
+#    echo $nice $disowned $midcpu $midmem $hicpu $himem
     
-#    fuzzy rules for detecting runaways. Basically, if there is no
-#    attached tty, or the process is inherited by init, it is forced
-#    to use the 'medium' cpu and memory thresholds. If there is an
-#    attached tty, or a parent process, the higher thresholds are used
-#    to decided if the process is a runaway
+#    fuzzy rules for detecting runaways. These minimized rules were
+#    found using the espresso heuristic logic minimization
+#    program. See the file 'logic.esp' for more details
+
     local BADNESS=$(or \
-	$(and $(not $nice) $midcpu) \
-    	$(and $(not $nice) $midmem) \
-    	$(and $(not $nice) $hicpu) \
-    	$(and $(not $nice) $himem) \
-    	$(and $nice $hicpu) \
-    	$(and $nice $himem) \
-    	$(and $(not $disowned) $midcpu) \
-    	$(and $(not $disowned) $midmem) \
-    	$(and $(not $disowned) $hicpu) \
-    	$(and $(not $disowned) $himem) \
-    	$(and $disowned $hicpu) \
-    	$(and $disowned $himem))
+    	$(and $(not $nice) $disowned $midcpu) \
+    	$(and $(not $nice) $disowned $midmem) \
+	$hicpu \
+	$himem)
+
 
     
     local THRESHOLD="0.30"
@@ -422,7 +437,5 @@ function main {
     # we did not find runaways. return error code.
     exit 1
 }
-
-
 # call main program
 main $@
