@@ -401,13 +401,16 @@ function main {
 	if [[ -n "$PERPROCESS" ]] ; then
 	    find_runaways
 	fi
+	# we found runaways. Exit with status 0
+	exit 0
     elif [[ -n "$FORCE" ]] ; then
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
 	    echo $HOSTNAME
 	fi
 	find_runaways
     fi
-    return 1
+    # we did not find runaways. return error code.
+    exit 1
 }
 # call main program
 main $@
