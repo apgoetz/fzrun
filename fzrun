@@ -28,8 +28,8 @@ FORCE=""
 PERPROCESS=""
 
 # print the help for this program
-function help {
-    echo <<EOF   
+function print_help {
+    cat <<EOF   
 Usage: fzrun [-vpfh]
 Uses fuzzy logic techniques to determine if a machine has runaway
 processes on it, and tries to identify which processes are runaways.
@@ -47,7 +47,7 @@ runaway. frun will examine individual processes in more detail,
 however, this operation is much slower.
 
 Report bugs to: andy@andygoetz.org
-
+fzrun home page: <http://github.com/apgoetz/fzrun>
 EOF
 }
 
@@ -343,6 +343,10 @@ function process_args {
 	fi
 	if [[ -n $(echo $arg | grep -i p) ]] ; then
 	    PERPROCESS=1
+	fi
+	if [[ -n $(echo $arg | grep -i h) ]] ; then
+	    print_help
+	    exit 0
 	fi
     done
 }
