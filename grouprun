@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# helper script to check for runaways in netgroup
+# helper script to execute a program on every box in a netgroup
 
 # make sure netgroup supplied
 if [[ $# -lt 1 ]] ; then 
@@ -15,11 +15,11 @@ set -- "${@:1:}" "${@:2}"
 
 # netgrouplist fails silently if invalid netgroup provided. 
 if [[ -z $(netgrouplist $group) ]] ; then
-    echo "empty netgrouplist. Possible typo with '$1' ?" > /dev/stderr
+    echo "empty netgrouplist. Possible typo with '$group' ?" > /dev/stderr
     exit 255
 fi
 
 # parallelize over entire set of boxen in netgroup
 netgrouplist $group \
 | xargs -I '{}' -P 0 \
-ssh -o StrictHostKeyChecking=no  '{}' ./fzrun/fzrun $@ 2>/dev/null 
+ssh -o StrictHostKeyChecking=no  '{}' $@ 2>/dev/null 
