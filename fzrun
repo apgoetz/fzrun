@@ -345,13 +345,9 @@ function is_runaway {
     local midmem=$(fuzzy ".15" ".15" $mem)
     local himem=$(fuzzy ".85" "1" $mem)
 
-
-#    echo $nice $disowned $midcpu $midmem $hicpu $himem
-    
-#    fuzzy rules for detecting runaways. These minimized rules were
-#    found using the espresso heuristic logic minimization
-#    program. See the file 'logic.esp' for more details
-
+    # fuzzy rules for detecting runaways. These minimized rules were
+    # found using the espresso heuristic logic minimization
+    # program. See the file 'logic.esp' for more details
     local BADNESS=$(or \
     	$(and $(not $nice) $disowned $midcpu) \
     	$(and $(not $nice) $disowned $midmem) \
