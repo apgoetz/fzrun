@@ -117,7 +117,6 @@ function not {
     else
 	echo 0
     fi    
-#    _bc "1 - $1"
 }
 
 # scales a fuzzy variable using a triangular fitness function.
@@ -134,6 +133,28 @@ function fuzzy {
 	"else {-$value / $width + 1 + $center/$width}"
 }
 
+# print text if debug is enabled
+function debug {
+    	if [[ -n "$VERBOSE" && -z "$SUPPRESS" ]] ; then
+	    echo $@
+	fi
+}
+
+# printf only if debug is enabled
+function debugf {
+    	if [[ -n "$VERBOSE" && -z "$SUPPRESS" ]] ; then
+	    printf $@
+	fi
+}
+
+# print text only if SUPPRESS not specified
+function suppress {
+    if [[ -z "$SUPPRESS" ]] ; then
+	echo $@
+    fi
+}
+
+
 # uses free to get the total amount of memory used in the
 # system. Value is scaled to 0-1
 function get_mem_usage {
@@ -146,7 +167,10 @@ function get_mem_usage {
 }
 
 # Another dimension checked during the cursory runaway check is the
-# percentage of cpu time spend waiting for IO.
+# percentage of cpu time spend waiting for IO. This function is
+# extremely slow, because in order to properly get a snapshot of io
+# wait time, the mpstat command needs to wait a second between taking
+# measurements.
 function get_io_usage {
     
     OS=$(uname)
@@ -247,23 +271,13 @@ function look_for_runaways {
 	mesg="bad"
 	retval=0
     fi
-    debug  -e "$HOSTNAME\t$(get_cpu_load)\t$(get_mem_usage)\t$IO_USAGE\t$mesg"
+
+    debugf '%-20s\t%-6s\t%-6s\t%-6s\t%-3s\n' $HOSTNAME $(get_cpu_load) \
+	$(get_mem_usage) $IO_USAGE $mesg
+
     return $retval
 }
 
-# print text if debug is enabled
-function debug {
-    	if [[ -n "$VERBOSE" && -z "$SUPPRESS" ]] ; then
-	    echo $@
-	fi
-}
-
-# print text only if SUPPRESS not specified
-function suppress {
-    if [[ -z "$SUPPRESS" ]] ; then
-	echo $@
-    fi
-}
 
 
 # determine if a specific process is a runaway process
