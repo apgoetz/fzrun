@@ -129,7 +129,7 @@ function fuzzy {
 
 
     _bc "if($value < $center - $width || $value > $center + $width) { 0 } " \
-    "else if ($value < $center) {$value / $width - ($center - $width) / $width} " \
+    "else if ($value < $center){$value / $width - ($center - $width) / $width}"\
 	"else {-$value / $width + 1 + $center/$width}"
 }
 
@@ -231,7 +231,8 @@ function get_cpu_load {
     
     # take the weighted average of the 1, 5 and 15 minute
     # averages. return this as the fuzzy cpu load
-    CPU_LOAD=$(_bc "($LOAD1 * $WEIGHT1 + $LOAD5 * $WEIGHT5 + $LOAD15 * $WEIGHT15) / $SUMWEIGHTS / $(num_cpus)")
+    CPU_LOAD=$(_bc "($LOAD1 * $WEIGHT1 + $LOAD5 * $WEIGHT5 + " \
+	"$LOAD15 * $WEIGHT15) / $SUMWEIGHTS / $(num_cpus)")
     echo $CPU_LOAD
 }
 
@@ -431,7 +432,8 @@ function main {
 	fi
 	exit $result
     fi
-    # If SINGLEPROCESS was not set, we will check the state of the entire machine
+    # If SINGLEPROCESS was not set, we will check the state of the
+    # entire machine
     if look_for_runaways ; then
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
 	    suppress $HOSTNAME
