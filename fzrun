@@ -289,37 +289,36 @@ function is_runaway {
     local ps=$(ps hu $p)
     # in order to avoid race conditions on parsing process info, grab
     # a snapshot of each process's info at one time
-    local psdata=$(ps ho nice,ppid,pcpu,pmem $pid)
-
+    local psdata=($(ps ho nice,ppid,pcpu,pmem $pid))
+    
     # the process probably already died. ignore it    
     if [[ -z $psdata ]] ; then
 	return 255
     fi
 
 
-    # use awk to extract the individual fields of the ps info for the process
+    # extract the individual fields of the ps info for the process
+
     # the nice level
-    local nice=$(echo $psdata | awk '{ print $1}')
+    local nice=${psdata[0]}
 
     # parent process id
-    local ppid=$(echo $psdata | awk '{ print $2 }')
+    local ppid=${psdata[1]}
 
     # percent cpu usage
-    local pcpu=$(echo $psdata | awk '{print $3 }')
+    local pcpu=${psdata[2]}
     # percent memory usage
-    local pmem=$(echo $psdata | awk '{print $4 }')
+    local pmem=${psdata[3]}
 
     # determine the "niceness" of the process
-    if [ $nice == '-' ] ; then
+    if [[ $nice == '-' || $nice -eq 0 ]] ; then
 	nice="0.0"
+    elif [[ "$nice" -lt 0 ]] ; then
+	nice=0
     else
 	nice=$(_bc "$nice / 20")
     fi
     
-    if cond "$nice < 0" ; then
-	nice=0
-    fi
-
     # determine if the process has been disowned by its parent
     local disowned=''
     if [[ $ppid == 1 ]] ; then
@@ -354,8 +353,6 @@ function is_runaway {
     	$(and $(not $nice) $disowned $midmem) \
 	$hicpu \
 	$himem)
-
-
     
     local THRESHOLD="0.30"
     
@@ -438,7 +435,7 @@ function main {
 	if [[ -z "$VERBOSE" && -z "$PERPROCESS" && -z "$FORCE" ]] ; then
 	    suppress $HOSTNAME
 	fi
-	if [[ -n "$PERPROCESS" ]] ; then
+	if [[ -n "$PERPROCESS" || -n "$FORCE" ]] ; then
 	    find_runaways
 	fi
 	# we found runaways. Exit with status 0
