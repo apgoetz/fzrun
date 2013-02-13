@@ -112,7 +112,7 @@ function or {
 # not function in this program. Because it is not fuzzy, we can use
 # shell builtins to speed up execution
 function not {
-    if [[ "$1" == 0 ]] ; then
+    if [[ "$1" == 0 || "$1" ==  "0.0" ]] ; then
 	echo 1
     else
 	echo 0
@@ -159,7 +159,7 @@ function suppress {
 # system. Value is scaled to 0-1
 function get_mem_usage {
         local total=$(free -t | tail -1 | awk '{ print $2 }')
-	local used=$(free -t | tail -1 | awk '{ print $3 }')
+	local used=$(free -t | grep cache: | awk '{ print $3 }')
 	
 	MEM_USAGE=$(_bc "$used / $total")
 	echo $MEM_USAGE
@@ -355,7 +355,6 @@ function is_runaway {
 	$himem)
     
     local THRESHOLD="0.30"
-    
     if cond "$BADNESS > $THRESHOLD" ; then
 	debug -e "$HOSTNAME $BADNESS $ps"
 	return 0
