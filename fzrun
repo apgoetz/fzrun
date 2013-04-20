@@ -112,11 +112,7 @@ function or {
 # not function in this program. Because it is not fuzzy, we can use
 # shell builtins to speed up execution
 function not {
-    if [[ "$1" == 0 || "$1" ==  "0.0" ]] ; then
-	echo 1
-    else
-	echo 0
-    fi    
+    _bc "1 - $1"
 }
 
 # scales a fuzzy variable using a triangular fitness function.
@@ -318,7 +314,7 @@ function is_runaway {
     else
 	nice=$(_bc "$nice / 20")
     fi
-    
+
     # determine if the process has been disowned by its parent
     local disowned=''
     if [[ $ppid == 1 ]] ; then
@@ -353,7 +349,7 @@ function is_runaway {
     	$(and $(not $nice) $disowned $midmem) \
 	$hicpu \
 	$himem)
-    
+
     local THRESHOLD="0.30"
     if cond "$BADNESS > $THRESHOLD" ; then
 	debug -e "$HOSTNAME $BADNESS $ps"
